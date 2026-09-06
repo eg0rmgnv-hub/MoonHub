@@ -36,8 +36,8 @@ local gui=Instance.new("ScreenGui")
 gui.Name="MoonHubXeno"
 gui.ResetOnSpawn=false
 gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
-pcall(function() gui.Parent=gethui and gethui() or game.CoreGui end)
-if not gui.Parent then gui.Parent=LocalPlayer:WaitForChild("PlayerGui") end
+gui.IgnoreGuiInset=true
+gui.Parent=LocalPlayer:WaitForChild("PlayerGui")
 
 local main=Instance.new("Frame", gui)
 main.Size=UDim2.fromOffset(520, 340)
