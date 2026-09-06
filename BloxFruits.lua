@@ -2,22 +2,35 @@ if game.PlaceId ~= 2753915549 and game.PlaceId ~= 4442272183 and game.PlaceId ~=
     warn("MoonHub Blox Fruits: Wrong game")
 end
 
-local function safeLoad(url)
+local function httpGet(url)
     local ok, res = pcall(function() return game:HttpGet(url) end)
-    if not ok or not res or res == "" then
-        ok, res = pcall(function() return game:HttpGet(url, true) end)
+    if ok and res and res ~= "" and #res > 100 then return res end
+    ok, res = pcall(function() return game:HttpGet(url, true) end)
+    if ok and res and res ~= "" and #res > 100 then return res end
+    local req = (syn and syn.request) or (http and http.request) or http_request or request
+    if req then
+        ok, res = pcall(function() return req({Url=url, Method="GET"}).Body end)
+        if ok and res and res ~= "" and #res > 100 then return res end
     end
-    if not ok or not res or res == "" then return nil end
-    local fn, err = loadstring(res)
+    return nil
+end
+local function safeLoad(url)
+    local src = httpGet(url)
+    if not src then return nil end
+    local fn, err = loadstring(src)
     if not fn then warn("Load failed "..url.." : "..tostring(err)) return nil end
     return fn
 end
 local FluentFn = safeLoad("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua")
-if not FluentFn then FluentFn = safeLoad("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/src/library.lua") end
-if not FluentFn then error("MoonHub: Failed to load Fluent UI. Executor HttpGet blocked") end
+if not FluentFn then FluentFn = safeLoad("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/main.lua") end
+if not FluentFn then FluentFn = safeLoad("https://cdn.jsdelivr.net/gh/dawid-scripts/Fluent@master/main.lua") end
+if not FluentFn then error("MoonHub: HttpGet blocked by executor. Use Delta/Wave") end
 local Fluent = FluentFn()
-local SaveManager = safeLoad("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua")()
-local InterfaceManager = safeLoad("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua")()
+if not Fluent or not Fluent.CreateWindow then error("MoonHub: Fluent load failed - try different executor") end
+local smFn = safeLoad("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua")
+local imFn = safeLoad("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua")
+local SaveManager = smFn and smFn() or nil
+local InterfaceManager = imFn and imFn() or nil
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -29,15 +42,22 @@ local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
-local Window = Fluent:CreateWindow({
-    Title = "MoonHub",
-    SubTitle = "Blox Fruits  |  MAX",
-    TabWidth = 165,
-    Size = UDim2.fromOffset(640, 540),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
+local winOk, Window = pcall(function()
+    return Fluent:CreateWindow({
+        Title = "MoonHub",
+        SubTitle = "Blox Fruits  |  MAX",
+        TabWidth = 165,
+        Size = UDim2.fromOffset(640, 540),
+        Acrylic = false,
+        Theme = "Dark",
+        MinimizeKey = Enum.KeyCode.LeftControl
+    })
+end)
+if not winOk or not Window then
+    warn("MoonHub: Fluent CreateWindow failed, using fallback")
+    pcall(function() game.StarterGui:SetCore("SendNotification", {Title="MoonHub", Text="Fluent failed on this executor. Use Wave/Delta", Duration=6}) end)
+    error("Fluent Window failed")
+end
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Auto Farm", Icon = "swords" }),
@@ -354,15 +374,19 @@ end)
 ------------------------------------------------
 -- SETTINGS
 ------------------------------------------------
-InterfaceManager:SetLibrary(Fluent)
-SaveManager:SetLibrary(Fluent)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({})
-InterfaceManager:SetFolder("MoonHubBF")
-SaveManager:SetFolder("MoonHubBF/config")
-SaveManager:BuildConfigSection(Tabs.Settings)
-InterfaceManager:BuildInterfaceSection(Tabs.Settings)
-Window:SelectTab(1)
-SaveManager:LoadAutoloadConfig()
+if SaveManager and InterfaceManager then
+    InterfaceManager:SetLibrary(Fluent)
+    SaveManager:SetLibrary(Fluent)
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({})
+    InterfaceManager:SetFolder("MoonHubBF")
+    SaveManager:SetFolder("MoonHubBF/config")
+    SaveManager:BuildConfigSection(Tabs.Settings)
+    InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+    Window:SelectTab(1)
+    pcall(function() SaveManager:LoadAutoloadConfig() end)
+else
+    Window:SelectTab(1)
+end
 
 Fluent:Notify({Title="MoonHub", Content="Press LeftControl to hide", Duration=5})
