@@ -122,7 +122,7 @@ Tabs.Movement:AddToggle("FlyToggle", { Title = "Fly", Default = false, Callback 
     flyEnabled = v
     if v then startFly() else stopFly() end
 end })
-Tabs.Movement:AddSlider("FlySpeed", { Title = "Fly Speed", Default = 50, Min = 10, Max = 300, Rounding = 0, Callback = function(v) flySpeed = v end })
+Tabs.Movement:AddSlider("FlySpeed", { Title = "Fly Speed", Default = 50, Min = 10, Max = 1000, Rounding = 0, Callback = function(v) flySpeed = v end })
 Tabs.Movement:AddToggle("Noclip", { Title = "Noclip", Default = false, Callback = function(v) noclipEnabled = v end })
 Tabs.Movement:AddToggle("InfJump", { Title = "Infinite Jump", Default = false, Callback = function(v) infJumpEnabled = v end })
 
